@@ -6,7 +6,7 @@ This code have all Constitutive models implemented
 
 
 import jax.numpy as jnp
-
+import jax
 # Superior Class who have more important functions
 class Material:
      
@@ -38,7 +38,7 @@ class Delphino_incompressible(Material):
         self.c1 , self.c2, self.kappa = constantes
 
     def psi(self,f):
-        C = self.Cauchy_Green_rigth(f)
+        C = jax.jit(self.Cauchy_Green_rigth)(f)
         I1,I2,I3 = jnp.einsum('...ii',C), 0.5 * (jnp.einsum('...ii',C)**2 - jnp.einsum('...ii',jnp.matmul(C,C))), jnp.linalg.det(C)
         J = I3**0.5
         aux = I3**(-1/3)
