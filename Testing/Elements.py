@@ -13,9 +13,17 @@ import pyvista as pv
 import jax 
 import numpy as np
 
-class energy():
+class Hexs():
 
     def __init__(self, material,nodes, conn):
+        """
+        Hexs(material,nodes, conn)
+        Parameters: material class of Material.py who have the constitutive model for energy (ex: Delphino_incompresible([coinstant]))
+                    nodos: Nodos de la malla
+                    conn: array de conectividades de la malla
+        
+        """
+        self.nodes_or = nodes
         self.conn = conn
         self.material = material
         self.nodes = nodes[conn]
@@ -50,6 +58,12 @@ class energy():
 
     def _get_nodes(self, x):
         return x[self.conn,:]
+    
+    def x_def(self,disp):
+
+        xn = self.nodes_or + disp
+
+        return xn
 
 
     def N_func(self, xi):
@@ -80,6 +94,7 @@ class energy():
                          [  -(1.0 + xi1)*(1.0 + xi2)/8.0,  (1.0 - xi0)*(1.0 + xi2)/8.0,  (1.0 - xi0)*(1.0 + xi1)/8.0],
                          ]) 
 
+            
     def der_X_xi(self, xi):  # 7.6b
         return jnp.einsum('...ai,aj', self.nodes, jax.jit(self.der_N_fun)(xi))
 
@@ -97,10 +112,19 @@ class energy():
         temp = self.der_x_xi(x, xi).transpose(0,2,1)
         inv_der_x_xi = jnp.linalg.inv(temp)
         
-        return jnp.matmul(inv_der_x_xi,jax.jit(self.der_N_fun)(xi).T).transpose(0,2,1)
+        return jnp.matmul(inv_der_x_xi,self.der_N_fun(xi).T).transpose(0,2,1)
     
     def f_gauss(self, x_n):  # gradiente de deformacion -- 7.5
         #print("disp", x_n)
+        """
+        f_gauss(self, x_n): Function to calculate deformation gradiente in gauss points
+
+        Parameters
+        x_n: array with nodal coordinates deformated state 
+
+        Return
+        F array dimensions (a,8,3,3) a: number of number of element, 8 deformation gradientes as 3x3 matrix 
+        """
         x = self._get_nodes(x_n)
         #print(f"xn: {x}")
         #print(self.der_N_X_gp)
@@ -111,30 +135,43 @@ class energy():
     def f(self, x_n):  # gradiente de deformacion -- 7.5
         #print("disp", x_n)
         x = self._get_nodes(x_n)
-        Fs = []
         
         F = np.einsum('eai,exaj->exij', x, self.der_N_X_esquinas)
     
         #print("test", F)
         return F
     
+    def psi(self,disp):
+        
+        x_n = self.x_def(disp)
+        x = self._get_nodes(x_n)
+        F = self.f_gauss(x_n)
 
-    def PSI(self,x_n):
-        # x_n nuevas coordenadas
-        #print(x_n)
-        x = jax.jit(self._get_nodes)(x_n)
-        F = jax.jit(self.f_gauss)(x_n)
-        # print(F.shape)
         temp = self.material.psi(F)
-        # print(temp.shape)
+
+        return temp
+    
+
+    def PSI(self,disp):
+        """
+        PSI(self,x_n): Function to calculate volume integral of element
+
+        Parameters 
+        x_n: Deformed Coordinates
+
+        Return
+        e_t: Array (1 element)
+        """
+        x_n = self.x_def(disp)
+        x = self._get_nodes(x_n)
+
+        temp = self.psi(disp)
+
         micro = []
         for it, gp in enumerate(self.gauss_points):
             #print(x.shape)
-            aux = jnp.linalg.det(jax.jit(self.der_x_xi)(x, gp))
+            aux = jnp.linalg.det(self.der_x_xi(x, gp))
             micro.append(aux)
         e_t = jnp.dot(temp,jnp.array(micro))
-        # print(jnp.array(micro).sum())
-        # # print(e_t)
-        # #print(micro)
-        # print(x_n)
+
         return e_t

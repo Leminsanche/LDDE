@@ -32,14 +32,18 @@ pl.add_text("Deformed State", font_size=30)
 pl.add_mesh(mesh_def, show_edges=True, color='lightblue')
 
 
-# Display the window
+# # Display the window
 pl.show()
 
 
 
 material = mat.Delphino_incompressible([30.0E-3,3.77,0])
 
-malla = EL.energy(material, mesh.points, mesh.cells_dict[12])
-print('Energy Initial State', malla.PSI(mesh.points)[0][0])
+malla = EL.Hexs(material, mesh.points, mesh.cells_dict[12])
 
-print('Energy Final State',malla.PSI(mesh_def.points)[0][0])
+
+
+
+print('Energy Initial State', malla.PSI(jnp.zeros_like(disp))[0][0])
+
+print('Energy Final State',malla.PSI(disp)[0][0])
