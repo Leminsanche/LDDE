@@ -37,13 +37,12 @@ pl.show()
 
 
 
-material = mat.Delphino_incompressible([30.0E-3,3.77,0])
+material = mat.Delphino([30.0E-3,3.77,0])
 
 malla = EL.Hexs(material, mesh.points, mesh.cells_dict[12])
 
 
 
+print('Energy Initial State', malla.PSI(jnp.zeros_like(disp)))
 
-print('Energy Initial State', malla.PSI(jnp.zeros_like(disp))[0][0])
-
-print('Energy Final State',malla.PSI(disp)[0][0])
+print('Energy Final State',malla.PSI(disp))

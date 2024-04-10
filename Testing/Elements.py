@@ -95,8 +95,9 @@ class Hexs():
                          ]) 
 
             
+    
     def der_X_xi(self, xi):  # 7.6b
-        return jnp.einsum('...ai,aj', self.nodes, jax.jit(self.der_N_fun)(xi))
+        return jnp.einsum('...ai,aj', self.nodes, self.der_N_fun(xi))
 
     def der_N_X(self, xi):  # 7.6b
         temp = self.der_X_xi(xi).transpose(0,2,1)
@@ -106,14 +107,20 @@ class Hexs():
         return out
 
     def der_x_xi(self, x, xi):  # 7.11a
-        return jnp.einsum('...ai,...aj', x, jax.jit(self.der_N_fun)(xi))
+        return jnp.einsum('...ai,aj', x, self.der_N_fun(xi))
+    
+    def der_x_xi_vec(self,x, xi):  # 7.11a
+        """
+        Vectorized function for der_x_xi
+        """
+        return jnp.einsum('...ai,...aj', x, jax.vmap(self.der_N_fun)(xi))
 
     def der_N_x(self, x, xi):  # 7.11b
         temp = self.der_x_xi(x, xi).transpose(0,2,1)
         inv_der_x_xi = jnp.linalg.inv(temp)
         
         return jnp.matmul(inv_der_x_xi,self.der_N_fun(xi).T).transpose(0,2,1)
-    
+
     def f_gauss(self, x_n):  # gradiente de deformacion -- 7.5
         #print("disp", x_n)
         """
@@ -141,20 +148,72 @@ class Hexs():
         #print("test", F)
         return F
     
+    def Cauchy_Green_rigth(self,x_n):
+        F = self.f_gauss(x_n)
+        F_T = jnp.moveaxis(F,-1,-2)
+        C = jnp.matmul(F_T,F)
+
+        return C
+    
     def psi(self,disp):
+        """
+        This work with contitutive models in tensorial way
+        DON'T USE
+        """
         
         x_n = self.x_def(disp)
-        x = self._get_nodes(x_n)
-        F = self.f_gauss(x_n)
+        C =self.Cauchy_Green_rigth(x_n)
 
-        temp = self.material.psi(F)
-
+        temp = self.material.psi(C)
         return temp
     
+    def psi_jax(self,disp):
+        
+        x_n = self.x_def(disp)
+        C =self.Cauchy_Green_rigth(x_n)
 
+        temp = jax.vmap(jax.vmap(self.material.psi))(C)
+        return temp
+    
+    def S_jax(self,disp):
+        x_n = self.x_def(disp)
+        C =self.Cauchy_Green_rigth(x_n)
+        temp = jax.vmap(jax.vmap(jax.jacobian(self.material.psi)))(C)
+        return 2*temp
+        
+
+    # def PSI(self,disp):
+    #     """
+    #     PSI(self,x_n): Function to calculate volume integral of element
+
+    #     THIS CODE HAVE TO BE OPTIMIZED
+
+    #     Parameters 
+    #     x_n: Deformed Coordinates
+
+    #     Return
+    #     e_t: Array (1 element)
+    #     """
+    #     x_n = self.x_def(disp)
+    #     x = self._get_nodes(x_n)
+
+    #     temp = self.psi_jax(disp)
+    #     #ac_dets = self.der_x_xi(x, self.gauss_points)
+    #     micro = []
+    #     for it, gp in enumerate(self.gauss_points):
+    #         #print(x.shape)
+    #         aux = jnp.linalg.det(self.der_x_xi(x, gp))
+    #         micro.append(aux)
+    #     e_t = jnp.dot(temp,jnp.array(micro))
+
+
+    #     return e_t
+    
     def PSI(self,disp):
         """
         PSI(self,x_n): Function to calculate volume integral of element
+
+        THIS CODE HAVE TO BE OPTIMIZED
 
         Parameters 
         x_n: Deformed Coordinates
@@ -165,13 +224,10 @@ class Hexs():
         x_n = self.x_def(disp)
         x = self._get_nodes(x_n)
 
-        temp = self.psi(disp)
+        temp = self.psi_jax(disp)
 
-        micro = []
-        for it, gp in enumerate(self.gauss_points):
-            #print(x.shape)
-            aux = jnp.linalg.det(self.der_x_xi(x, gp))
-            micro.append(aux)
-        e_t = jnp.dot(temp,jnp.array(micro))
+        aux = jnp.linalg.det(self.der_x_xi_vec(x, self.gauss_points))
+        e_t = jnp.dot(temp,aux)
+
 
         return e_t
