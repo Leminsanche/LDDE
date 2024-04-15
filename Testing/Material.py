@@ -65,7 +65,7 @@ class Delphino():
         I3 = jnp.linalg.det(C)
         J = I3**0.5
         aux = I3**(-1/3)
-        psi = (self.c1/self.c2) * (jnp.e**(self.c2*0.5*(I1*aux-3)) - 1 ) + 0.5* self.kappa * (J - 1)**2
+        psi = (self.c1/self.c2) * (jnp.e**(self.c2*0.5*(I1*aux-3)) - 1 ) +  0.5*self.kappa * (J - 1)**2
         return psi
 
 

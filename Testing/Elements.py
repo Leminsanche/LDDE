@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 import pyvista as pv
 import jax 
 import numpy as np
+# from jax import config
+# config.update("jax_enable_x64", True)
 
 class Hexs():
 
@@ -180,34 +182,19 @@ class Hexs():
         C =self.Cauchy_Green_rigth(x_n)
         temp = jax.vmap(jax.vmap(jax.jacobian(self.material.psi)))(C)
         return 2*temp
+    
+    def Cauchy(self,disp):
+        S = self.S_jax(disp)
+        x_n = self.x_def(disp)
+        F = self.f(x_n)
+        #print(F)
+        J_inv = 1/jnp.linalg.det(F)
+        # print(J_inv.shape)
+        # print(S.shape)
+        # print(F.shape)
+        sigma = jnp.einsum('naik,nakl,najl->naij',F,S,F)
         
-
-    # def PSI(self,disp):
-    #     """
-    #     PSI(self,x_n): Function to calculate volume integral of element
-
-    #     THIS CODE HAVE TO BE OPTIMIZED
-
-    #     Parameters 
-    #     x_n: Deformed Coordinates
-
-    #     Return
-    #     e_t: Array (1 element)
-    #     """
-    #     x_n = self.x_def(disp)
-    #     x = self._get_nodes(x_n)
-
-    #     temp = self.psi_jax(disp)
-    #     #ac_dets = self.der_x_xi(x, self.gauss_points)
-    #     micro = []
-    #     for it, gp in enumerate(self.gauss_points):
-    #         #print(x.shape)
-    #         aux = jnp.linalg.det(self.der_x_xi(x, gp))
-    #         micro.append(aux)
-    #     e_t = jnp.dot(temp,jnp.array(micro))
-
-
-    #     return e_t
+        return sigma #* J_inv[:, :, np.newaxis, np.newaxis]
     
     def PSI(self,disp):
         """
