@@ -1,4 +1,4 @@
-# Subscpace-Deep-Energy-Method
+# Subspace-Deep-Energy-Method
 
 ## Author: Nicolás Sánchez- Claudio Canales - Claudio Garcia 
 ## Institution: Laboratororio Biomecanica y Biomateriales USACH
