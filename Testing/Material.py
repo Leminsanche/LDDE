@@ -57,15 +57,19 @@ class Neo_hooke():
     
 class Delphino():
 
-    def __init__(self, constantes):
-        self.c1 , self.c2, self.kappa = constantes
+    def __init__(self, constantes,penal):
+        self.constants = jnp.array(constantes)
+        self.penal = penal
 
-    def psi(self,C):
+
+    def psi(self,C, constantes):
+        c1 , c2 = constantes
         I1 = jnp.trace(C)
         I3 = jnp.linalg.det(C)
-        J = I3**0.5
-        aux = I3**(-1/3)
-        psi = (self.c1/self.c2) * (jnp.e**(self.c2*0.5*(I1*aux-3)) - 1 ) +  0.5*self.kappa * (J - 1)**2
+        J = jnp.sqrt(I3)
+        aux = jnp.power(I3, -1/3)#I3**(-1/3)
+        psi = (c1/c2) * (jnp.e**(c2*0.5*(I1*aux-3)) - 1 ) +  0.5* self.penal * (jnp.log(J))**2#+  0.5*kappa * (J - 1)**2
+        #psi = (c1/c2) * (jnp.e**(c2*0.5*(I1*aux-3)) - 1 )+  0.5*kappa * (J - 1)**2
         return psi
 
 
