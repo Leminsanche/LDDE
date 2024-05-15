@@ -2,7 +2,7 @@ import meshio
 import pyvista as pv
 import numpy as np
 import jax.numpy as jnp
-
+from jax import jit
 def Hex_Reader(mesh_file, drichlet_bc= [], neumann_bc = [], plot = False):
     """
     Function to read gmsh file and extract boundary contidions
@@ -147,3 +147,11 @@ def change_state_plot(mesh, disp):
 
     # # Display the window
     pl.show()
+
+
+@jit
+def extract_column(array, direction):
+    index_direction_1 = jnp.argmin(direction)
+    index_direction_2 = jnp.argmin(direction[::-1]) + 2
+    indices = jnp.array([index_direction_1, index_direction_2], dtype= 'int64')
+    return array[:, indices]

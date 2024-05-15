@@ -323,16 +323,14 @@ class Hexs():
                 displacement_bc = disp[cells]
 
                 e_ext = jnp.einsum('ijk,ijk -> ij',Traccions,displacement_bc)
-                index_direction = jnp.nonzero(direction)[0][0]
-
-                indices = jnp.arange(self.nodes_or.shape[1])
-                mask = indices != index_direction
-
-
-
-                nodes = self.nodes_or[:,mask]#jnp.delete(self.nodes_or,index_direction, axis = 1)
-                nodes_def = x_n[:,mask]#jnp.delete(x_n,index_direction, axis = 1)
-
+                # index_direction = jnp.argmax(direction)# index_direction = jnp.nonzero(direction)[0][0]
+                # indices = jnp.arange(self.nodes_or.shape[1])
+                # mask = indices != index_direction
+                # nodes = self.nodes_or[:,mask]#jnp.delete(self.nodes_or,index_direction, axis = 1)
+                # nodes_def = x_n[:,mask]#jnp.delete(x_n,index_direction, axis = 1)
+                
+                nodes = fun.extract_column(self.nodes_or,direction)
+                nodes_def = fun.extract_column(x_n,direction)
                 bc = Quads(nodes,cells)
 
                 N_fun = jax.vmap(bc.N_func)(bc.puntos_iso)
@@ -464,7 +462,7 @@ class Quads:
 
     def der_N_X(self, xi):  # 7.6b
         temp = self.der_X_xi(xi).transpose(0,2,1)
-        inv_der_X_xi = np.linalg.inv(temp)
+        inv_der_X_xi = jnp.linalg.inv(temp)
         out = jnp.matmul(inv_der_X_xi, self.der_N_fun(xi).T).transpose(0,2,1)
         ##print(out.shape)
         return out
