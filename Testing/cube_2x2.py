@@ -15,21 +15,24 @@ key = random.key(0)
 
 
 ## import mesh
-mesh_file = 'Testing/Meshes/cubo.msh'
+mesh_file = 'Testing/Meshes/cube_2x2.msh'
 mesh = pv.read(mesh_file)  #Orgiinal File
 mesh.clear_data()
 
 points_total,connectivity_total,bc_drichlet_cells,bc_neumann_cells = Hex_Reader(mesh_file,
                                                                                 drichlet_bc= ["X_1"],plot = False)
 
-## Until the moment Only Works with perpendicular directions
-bc_drichlet_cells['X_1'] = [bc_drichlet_cells['X_1'], jnp.array([1,0,0]) ]
-#bc_neumann_cells["X_1"] = [bc_neumann_cells["X_1"], jnp.array([1,0,0]) ]
+#####
+
+
+## Till the moment Only Works with perpendicular directions
+bc_drichlet_cells["X_1"] = [bc_drichlet_cells["X_1"], jnp.array([1,0,0]) ]
+# bc_neumann_cells["X_1"] = [bc_neumann_cells["X_1"], jnp.array([1,0,0]) ]
 # bc_neumann_cells['Extremo_Sup'] = [bc_neumann_cells['Extremo_Sup'], jnp.array([0,0,1]) ]
 
 
 ## displacement from FEM software (Vulcan)
-disp_file  ='Testing/Displacement_Tests/Cubo_Traccion_X.npy'
+disp_file  ='Testing/Displacement_Tests/Cubo_Traccion_X_2x2.npy'
 disp = np.load(disp_file)[-1,:,:]  # The order of this file is [time, node, dim]
 
 
@@ -39,26 +42,22 @@ mesh_def.points += disp
 
 
 
-constant = [0.03,3.77]
+constant = [30e-3,3.77]
 material = mat.Delphino(constant,100)
 
 malla = EL.Hexs(material, points_total,connectivity_total)
 
 
 
-#### Deformation Gradiente Test
-#print(malla.f(mesh_def.points)[-1,-1,:,:])
-#f_1 = malla.f(mesh_def.points)[-1,-1,:,:]
-
+#### Stress Tensor Test
 Tensor_Cauchy = Result_Tensor(malla.Cauchy(disp),malla.nodes_repeated)
-print('Cauchy Tensor: \n',Tensor_Cauchy.shape)
+# print('Cauchy Tensor: \n',Tensor_Cauchy.shape)
 
 
 ##### Internal Forces ######
 
 Internal_Forces = Result_Vector(malla.Internal_Force(disp),malla.nodes_repeated)
-print('Internal Forces: \n',Internal_Forces.shape)
-
+# print('Internal Forces: \n',Internal_Forces.shape)
 
 ### External Energy Test
 External_energy  =  malla.External_Energy(disp, Dritchlet_BC = bc_drichlet_cells)
@@ -75,9 +74,8 @@ mesh_def.save(save_name)
 # mesh_def.set_active_scalars('Tensor de Cauchy ZZ')
 
 
-# print('Energy Initial State', malla.PSI(jnp.zeros_like(disp),constant))
-print('Energy Initial State', jnp.sum(malla.PSI(jnp.zeros_like(disp),constant)))
-
+##### Volumetric Energy Test #####
+print('Energy Initial State', malla.PSI(jnp.zeros_like(disp),constant))
 
 print('Energy Final State',malla.PSI(disp,constant))
 # print('Energy Final State',malla.PSI(disp).dtype)

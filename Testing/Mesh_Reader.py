@@ -5,7 +5,7 @@ import jax.numpy as jnp
 # and select between dritchlet, neuman or both 
 # Here are tow case cube.msh is a cube mesh with one element and biaxial2.msh who is a complex mesh
 
-file = 'Testing/Biaxial2.msh'
+file = 'Testing/Meshes/Biaxial2.msh'
 #file = 'Testing/unit_cube.msh'
 
 # points_total,connectivity_total,bc_drichlet_cells,bc_neumann_cells = Hex_Reader(file, 

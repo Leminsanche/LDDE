@@ -1,6 +1,7 @@
 import meshio
 import pyvista as pv
 import numpy as np
+import jax.numpy as jnp
 
 def Hex_Reader(mesh_file, drichlet_bc= [], neumann_bc = [], plot = False):
     """
@@ -73,3 +74,76 @@ def Hex_Reader(mesh_file, drichlet_bc= [], neumann_bc = [], plot = False):
 
 
     return points_total,connectivity_total,bc_drichlet_cells,bc_neumann_cells
+
+
+def Result_Tensor(Original_array,Coincident_nodes):
+    New_array  = jnp.zeros((len(Coincident_nodes.keys()),Original_array.shape[-2],Original_array.shape[-1]))
+    for i in Coincident_nodes:
+        tensor_indexs = jnp.array(Coincident_nodes[i])
+        aux  = jnp.mean(Original_array[tensor_indexs[:,0],tensor_indexs[:,1],:,:],axis = 0)
+        New_array  = New_array.at[i].set(aux)
+    return New_array
+
+def Result_Vector(Original_array,Coincident_nodes, avg = False):
+    New_array  = jnp.zeros((len(Coincident_nodes.keys()),Original_array.shape[-1]))
+    for i in Coincident_nodes:
+        tensor_indexs = jnp.array(Coincident_nodes[i])
+        if avg == True:
+            aux  = jnp.mean(Original_array[tensor_indexs[:,0],tensor_indexs[:,1],:],axis = 0)
+        else:
+            aux  = jnp.sum(Original_array[tensor_indexs[:,0],tensor_indexs[:,1],:],axis = 0)
+        New_array  = New_array.at[i].set(aux)
+    return New_array
+
+def Result_Scalar(Original_array,Coincident_nodes, avg = False):
+    New_array  = jnp.zeros((len(Coincident_nodes.keys())))
+    for it,i in enumerate(Coincident_nodes):
+        tensor_indexs = jnp.array(Coincident_nodes[i])
+        if avg == True:
+            aux  = jnp.mean(Original_array[tensor_indexs[:,0],tensor_indexs[:,1]])
+        else:
+            aux  = jnp.sum(Original_array[tensor_indexs[:,0],tensor_indexs[:,1]])
+        New_array  = New_array.at[it].set(aux)
+    return New_array
+
+def Coincident_nodes(array):
+    """
+    Some functiones in this code work with the dimensions (#Element, #nodes per element, dim 1, dim 2)
+    Example Deformation Gradient (#element, #nodes per element, 3,3)
+
+    For this reazon each element have a 8 values, this generate for the coincident nodes to much information
+    for this reason the results in coincident nodes are averaged
+
+    This functon obtai wich nodes are coincident and of wich element belong
+    """
+    nodes_repeated = {}
+    unique_values = sorted(set(val for sublist in array for val in sublist))
+    
+    for i in unique_values:
+        nodes_repeated[i] = []
+
+    for i, ielem in enumerate(array):
+        for it, nodo in enumerate(ielem):
+            nodes_repeated[nodo].append([i, it])
+
+    return nodes_repeated
+
+def change_state_plot(mesh, disp):
+    mesh_def = mesh.copy()
+    mesh_def.points = mesh_def.points + np.array(disp)
+
+    pl = pv.Plotter(shape=(1, 2))
+
+
+    pl.subplot(0, 0)
+    pl.add_text("Original State", font_size=30)
+    pl.add_mesh(mesh, show_edges=True, color='lightblue',opacity = 1)
+
+
+    pl.subplot(0, 1)
+    pl.add_text("Deformed State", font_size=30)
+    pl.add_mesh(mesh_def, show_edges=True, color='lightblue')
+
+
+    # # Display the window
+    pl.show()
