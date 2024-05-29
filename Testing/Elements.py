@@ -142,7 +142,12 @@ class Hexs():
         """
         Vectorized function for der_x_xi
         """
-        return jnp.einsum('...ai,...aj -> ...ij', x, jax.vmap(self.der_N_fun)(xi))
+        aux  =jax.vmap(self.der_N_fun)(xi)
+        # print('x',x.shape)
+        # print('aux',aux.shape)
+        out =  jnp.einsum('nai, kaj -> nkij', x, aux)
+        #print(out.shape)
+        return out #jnp.einsum('...ai,...aj -> ...ij', x, aux) #
 
     def der_N_x(self, x, xi):  # 7.11b
         temp = self.der_x_xi(x, xi).transpose(0,2,1)
@@ -245,12 +250,14 @@ class Hexs():
 
         Cauchy = self.Cauchy(disp)
         Jacob = self.der_x_xi_vec(xn,self.gauss_points)
+        # print('Jacob',Jacob.shape)
         det_Jacob = jnp.linalg.det(Jacob)
+        # print('Det Jacob',det_Jacob.shape)
         grad_shape_def = jax.vmap(self.der_N_x,(None,0))(xn,self.gauss_points)### Puede Traer Error
         grad_shape_def = jnp.transpose(grad_shape_def,(1,0,2,3))
         #grad_shape_def = jnp.array([self.der_N_x(xn,i) for  i in self.gauss_points]).transpose((1,0,2,3)) #less numeric error than vmap
         aux = jnp.einsum('...aij , ...akj ->...aki',Cauchy,grad_shape_def)
-        Internal_Forces = jnp.einsum('...aij,a -> ...ij',aux,det_Jacob)
+        Internal_Forces = jnp.einsum('...aij,...a -> ...ij',aux,det_Jacob)
 
         return Internal_Forces
 
@@ -274,7 +281,8 @@ class Hexs():
         temp = self.psi_jax(disp,constantes)
 
         aux = jnp.linalg.det(self.der_x_xi_vec(x, self.gauss_points))
-        e_t = jnp.dot(temp,aux)
+        #print(aux.shape)
+        e_t = jnp.einsum('na,na',temp,aux)
 
 
         return jnp.sum(e_t)
@@ -357,9 +365,12 @@ class Hexs():
                 displacement_bc = disp[cells]
                 Forces = jnp.ones_like(displacement_bc)*Force
                 e_ext = jnp.einsum('ijk,ijk -> ij',Forces,displacement_bc)
-                index_direction = jnp.nonzero(Force)[0][0]
-                nodes = jnp.delete(self.nodes_or,index_direction, axis = 1)
-                nodes_def = jnp.delete(x_n,index_direction, axis = 1)
+                # index_direction = jnp.nonzero(Force)[0][0]
+
+                nodes = fun.extract_column(self.nodes_or,Forces)
+                nodes_def = fun.extract_column(x_n,Forces)
+                # nodes = jnp.delete(self.nodes_or,index_direction, axis = 1)
+                # nodes_def = jnp.delete(x_n,index_direction, axis = 1)
                 # print(index_direction)
                 # print(self.nodes_or)
                 bc = Quads(nodes,cells)

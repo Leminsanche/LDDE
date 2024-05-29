@@ -23,19 +23,26 @@ def Hex_Reader(mesh_file, drichlet_bc= [], neumann_bc = [], plot = False):
 
     if drichlet_bc is not None:
         bc_drichlet_cells = {}
+        bc_drichlet_nodes = {}
         for i in drichlet_bc:
             physical_tag = physical_names[i][0]
             element_index = np.where(physical_data_bc == physical_tag)[0]#[0]
+            #print(element_index)
+            unique_nodes = np.unique(element_type['quad'][element_index])
             bc_drichlet_cells[i] = element_type['quad'][element_index]#element_index
+            bc_drichlet_nodes[i] = unique_nodes#element_index
 
     #print(bc_drichlet_cells)
 
     if neumann_bc is not None:
         bc_neumann_cells = {}
+        bc_neumann_nodes = {}
         for i in neumann_bc:
             physical_tag = physical_names[i][0]
             element_index = np.where(physical_data_bc == physical_tag)[0]#[0]
+            unique_nodes = np.unique(element_type['quad'][element_index])
             bc_neumann_cells[i] = element_type['quad'][element_index]#element_index
+            bc_neumann_nodes[i] = unique_nodes
 
 
 
@@ -73,7 +80,7 @@ def Hex_Reader(mesh_file, drichlet_bc= [], neumann_bc = [], plot = False):
         
 
 
-    return points_total,connectivity_total,bc_drichlet_cells,bc_neumann_cells
+    return points_total,connectivity_total,bc_drichlet_cells,bc_drichlet_nodes,bc_neumann_cells,bc_neumann_nodes
 
 
 def Result_Tensor(Original_array,Coincident_nodes):
