@@ -14,7 +14,7 @@ import numpy as np
 from tqdm import tqdm
 from jax import config
 import time
-# config.update("jax_enable_x32", True)
+config.update("jax_enable_x64", True)
 key = random.key(0)
 
 
