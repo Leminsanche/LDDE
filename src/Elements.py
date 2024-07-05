@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import pyvista as pv
 import jax
 import numpy as np
-import Functions as fun
+import src.Functions as fun
 # from jax import config
 # config.update("jax_enable_x64", True)
 
@@ -269,7 +269,8 @@ class Hexs():
         THIS CODE HAVE TO BE OPTIMIZED
 
         Parameters
-        x_n: Deformed Coordinates
+        disp: Displacement
+        params, constitutive parameters
 
         Return
         e_t: Array (1 element)
