@@ -3,7 +3,7 @@
 
 This code have all Solvers Implemented to minimize Energy
 """
-
+import numpy as np
 
 import jax.numpy as jnp
 import jax
@@ -12,6 +12,11 @@ from tqdm import tqdm
 import optax
 import jaxopt
 
+from pymoo.algorithms.soo.nonconvex.cmaes import CMAES
+from pymoo.problems import get_problem
+from pymoo.optimize import minimize
+from pymoo.core.problem import ElementwiseProblem
+from pymoo.core.callback import Callback
 
 class optimizers():
 
@@ -110,6 +115,66 @@ class optimizers():
 
         return params , loss_values, path
 
+    def CMAES(self,initial_variable,lower_bounds = None, upper_bounds = None ,iterations = 1000, tolerancia = 0.01, verbose_output = False):
 
+        initial_variable = np.array(initial_variable)
+
+        if lower_bounds == None and upper_bounds == None:
+            lower_bounds = initial_variable * 0.5
+            upper_bounds = initial_variable * 1.5
+
+        problem = Population_Based_Problem(initial_variable, self.loss_function,lower_bounds, upper_bounds)
+        algorithm = CMAES(x0=initial_variable,
+                 sigma=0.5,
+                 restarts=2,
+                 tolfun= tolerancia,
+                 tolx= tolerancia,
+                 restart_from_best=True,
+                 bipop=True)
+        
+        res = minimize(problem,
+                    algorithm,
+                    ('n_iter', iterations),
+                    callback=MyCallback(),
+                    seed=1,
+                    verbose= verbose_output)
+        
+        best_solutions = res.algorithm.callback.data["best"]
+
+        
+
+        return res.X, best_solutions
+
+
+################################### Evolution Based Algoritms ###################################################
+class Population_Based_Problem(ElementwiseProblem):
+    def __init__(self,Initial_Variable, loss_function,lower_bounds, upper_bounds, **kwargs):
+        
+        self.Initial_Variable = Initial_Variable
+        self.Modelo = loss_function
+        self.num_const = len(Initial_Variable)
+        super().__init__(n_var=self.num_const,
+                         n_obj=1,
+                         n_ieq_constr=0,
+                         xl=lower_bounds,
+                         xu=upper_bounds )
+
+    def _evaluate(self, x, out, *args, **kwargs):
+        x = jnp.array(x)
+        aux = self.Modelo(x)
+        aux = np.array(aux)
+        f1 = aux
+        #g1 = x[0] > 0
+        out["F"] = f1
+        #out["G"] = g1
+
+class MyCallback(Callback):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.data["best"] = []
+
+    def notify(self, algorithm):
+        self.data["best"].append(algorithm.pop.get("X")[np.argmin(algorithm.pop.get("F"))])
 
 

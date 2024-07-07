@@ -30,19 +30,25 @@ points_total,connectivity_total,bc_drichlet_cells,bc_drichlet_nodes,bc_neumann_c
 
 
 ## Material SET
-constant = [0.03,3.77]  ## Constantes originales
+constant = [1,1] #Random Values to initialize  ## Constantes originales [0.03,3.77]
 material = Mat.Delphino(constant,100) ## 100 == penalty for incompresibility  
 malla = EL.Hexs(material, points_total,connectivity_total)
 
-## Displacement SET
-displacement = np.load('Uniaxial_Caracterization/input/Cube_10x10.npy')[-1,:,:]
+## Displacement SeT, Energy Set, time step Set ##
+time_steps = np.loadtxt('Uniaxial_Caracterization/input/cubo_10_enrgys.txt')[:,0].astype(int)
+energys = jnp.array(np.loadtxt('Uniaxial_Caracterization/input/cubo_10_enrgys.txt')[:,1])
+displacement = np.load('Uniaxial_Caracterization/input/cubo_10_disp.npy')[time_steps,:,:]
+
+
+PSI_vec = jax.vmap(malla.PSI, in_axes= [0, None]) # Vectorize Function to use more displacement in one evaluation
 
 ### Optimization 
 @jit
 def loss_function(params):
     global displacement
-    energy_internal = malla.PSI(displacement,params)
-    return jnp.abs(energy_internal  - 0.331)
+    # energy_internal = malla.PSI(displacement,params)
+    energy_internal = PSI_vec(displacement,params)
+    return jnp.linalg.norm(energy_internal  - energys)#jnp.abs(energy_internal  - 0.331)
 
 @jit
 def Jacobian(params):
@@ -50,10 +56,8 @@ def Jacobian(params):
     return J
 
 
-Energy = malla.PSI(displacement, constant)
-
-
-initial_variable = jnp.array([0.025,3.8])
+# initial_variable = jnp.array([0.025,3.8])
+initial_variable = jnp.array([0.01,4])
 
 
 solver = Sol.optimizers(loss_function, Jacobian, 1e-3)
@@ -61,12 +65,14 @@ solver = Sol.optimizers(loss_function, Jacobian, 1e-3)
 params , loss_values, path = solver.LBFGS(initial_variable,4000, tolerancia = 1e-16)
 #params , loss_values, path = solver.adam(initial_variable,4000,tolerancia= 1e-8)
 
+print(params)
+
 
 # Convert path to a numpy array for easier plotting
 path = jnp.array(path)
 
 
-print(params)
+###### Plot config ######
 # Create a grid for plotting the loss function surface
 x = jnp.linspace(params[0]/2, params[0]*1.5, 400)  # Adjust range based on your problem
 y = jnp.linspace(params[1]/2, params[1]*1.5, 400)  # Adjust range based on your problem
@@ -96,7 +102,7 @@ plt.show()
 
 plt.plot(loss_values)
 plt.grid()
-# plt.yscale('log')
+plt.yscale('log')
 plt.show()
 
 # Create the plotly 3D surface plot

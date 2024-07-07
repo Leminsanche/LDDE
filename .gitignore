@@ -1,2 +1,3 @@
 env/
 Testing/__pycache__/
+*.html
