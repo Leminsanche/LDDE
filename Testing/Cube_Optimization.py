@@ -71,7 +71,7 @@ print('Initial Energy', loss_function(disp_0))
 start_learning_rate = 1e-2
 optimizer = optax.adam(start_learning_rate)
 disp_Adam = u(disp_0,0.01)
-opt_state = optimizer.init(disp_Adam)
+
 
 
 mesh_def = mesh.copy()
@@ -80,10 +80,11 @@ mesh_def.save('cube_views/Cubo10x10_'+str(0)  + '.vtu')
 Energys_Adam  = []
 
 inicio = time.time()
-imp_final = 1
-disps = jnp.linspace(0.01,imp_final,40)
+imp_final = 0.1
+disps = [imp_final]#jnp.linspace(0.01,imp_final,40)
 
 for it, desp in enumerate(disps):
+  opt_state = optimizer.init(disp_Adam)
   for i in tqdm(range(250)):
     grads = Jacobian(disp_Adam)
     updates, opt_state = optimizer.update(grads, opt_state)

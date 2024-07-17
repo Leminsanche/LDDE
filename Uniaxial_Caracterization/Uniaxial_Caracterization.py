@@ -59,10 +59,9 @@ def Jacobian(params):
 # initial_variable = jnp.array([0.025,3.8])
 initial_variable = jnp.array([0.01,4])
 
-
 solver = Sol.optimizers(loss_function, Jacobian, 1e-3)
 
-params , loss_values, path = solver.LBFGS(initial_variable,4000, tolerancia = 1e-16)
+params , loss_values, path = solver.LBFGS(initial_variable,4000, tolerancia = 1e-8)
 #params , loss_values, path = solver.adam(initial_variable,4000,tolerancia= 1e-8)
 
 print(params)
@@ -72,63 +71,63 @@ print(params)
 path = jnp.array(path)
 
 
-###### Plot config ######
-# Create a grid for plotting the loss function surface
-x = jnp.linspace(params[0]/2, params[0]*1.5, 400)  # Adjust range based on your problem
-y = jnp.linspace(params[1]/2, params[1]*1.5, 400)  # Adjust range based on your problem
-X, Y = jnp.meshgrid(x, y)
-Z = jnp.array([[loss_function((xi, yi)) for xi in x] for yi in y])
+# ###### Plot config ######
+# # Create a grid for plotting the loss function surface
+# x = jnp.linspace(params[0]/2, params[0]*1.5, 400)  # Adjust range based on your problem
+# y = jnp.linspace(params[1]/2, params[1]*1.5, 400)  # Adjust range based on your problem
+# X, Y = jnp.meshgrid(x, y)
+# Z = jnp.array([[loss_function((xi, yi)) for xi in x] for yi in y])
 
-# Plot the surface and the optimization path
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-ax.plot_surface(X, Y, Z, alpha=0.8, cmap='inferno')
+# # Plot the surface and the optimization path
+# fig = plt.figure()
+# ax = fig.add_subplot(111, projection='3d')
+# ax.plot_surface(X, Y, Z, alpha=0.8, cmap='inferno')
 
-# Extract the x, y, z coordinates of the path
-path_x = path[:, 0]
-path_y = path[:, 1]
-path_z = jnp.array([loss_function(params) for params in path])
+# # Extract the x, y, z coordinates of the path
+# path_x = path[:, 0]
+# path_y = path[:, 1]
+# path_z = jnp.array([loss_function(params) for params in path])
 
-# Plot the optimization path
-ax.plot(path_x[-1], path_y[-1], path_z[-1], color='b', marker='o', markersize=8)
-ax.plot(path_x, path_y, path_z, color='r', marker='o', markersize=3, label='Optimization Path')
-ax.set_xlabel('Variable 1')
-ax.set_ylabel('Variable 2')
-ax.set_zlabel('Loss Function')
-ax.legend()
+# # Plot the optimization path
+# ax.plot(path_x[-1], path_y[-1], path_z[-1], color='b', marker='o', markersize=8)
+# ax.plot(path_x, path_y, path_z, color='r', marker='o', markersize=3, label='Optimization Path')
+# ax.set_xlabel('Variable 1')
+# ax.set_ylabel('Variable 2')
+# ax.set_zlabel('Loss Function')
+# ax.legend()
 
-plt.show()
-
-
-plt.plot(loss_values)
-plt.grid()
-plt.yscale('log')
-plt.show()
-
-# Create the plotly 3D surface plot
-surface = go.Surface(x=X, y=Y, z=Z, colorscale='Viridis', opacity=0.8)
-path_trace = go.Scatter3d(x=path_x, y=path_y, z=path_z, mode='lines+markers', line=dict(color='red', width=5), marker=dict(size=5))
-optimum_point = go.Scatter3d(x=[path_x[-1]], y=[path_y[-1]], z=[path_z[-1]], mode='markers', line=dict(color='blue', width=7), marker=dict(size=9))
+# plt.show()
 
 
-# Define the layout
-layout = go.Layout(
-    title='Optimization Path on Loss Function Surface',
-    scene=dict(
-        xaxis=dict(title='X', showgrid=True),
-        yaxis=dict(title='Y', showgrid=True),
-        zaxis=dict(title='Loss Function', showgrid=True)
-    ),
-    showlegend=False
-)
+# plt.plot(loss_values)
+# plt.grid()
+# plt.yscale('log')
+# plt.show()
 
-# Create the figure
-fig = go.Figure(data=[surface, path_trace,optimum_point], layout=layout)
+# # Create the plotly 3D surface plot
+# surface = go.Surface(x=X, y=Y, z=Z, colorscale='Viridis', opacity=0.8)
+# path_trace = go.Scatter3d(x=path_x, y=path_y, z=path_z, mode='lines+markers', line=dict(color='red', width=5), marker=dict(size=5))
+# optimum_point = go.Scatter3d(x=[path_x[-1]], y=[path_y[-1]], z=[path_z[-1]], mode='markers', line=dict(color='blue', width=7), marker=dict(size=9))
 
-# Save the interactive plot as an HTML file
-pio.write_html(fig, 'interactive_optimization_path.html')
 
-# To open the plot later, you can simply open the 'interactive_optimization_path.html' file in a web browser.
+# # Define the layout
+# layout = go.Layout(
+#     title='Optimization Path on Loss Function Surface',
+#     scene=dict(
+#         xaxis=dict(title='X', showgrid=True),
+#         yaxis=dict(title='Y', showgrid=True),
+#         zaxis=dict(title='Loss Function', showgrid=True)
+#     ),
+#     showlegend=False
+# )
+
+# # Create the figure
+# fig = go.Figure(data=[surface, path_trace,optimum_point], layout=layout)
+
+# # Save the interactive plot as an HTML file
+# pio.write_html(fig, 'interactive_optimization_path.html')
+
+# # To open the plot later, you can simply open the 'interactive_optimization_path.html' file in a web browser.
 
 
             
